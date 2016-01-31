@@ -1,14 +1,16 @@
 # mush
 
-A Clojure library designed to ... well, that part is up to you.
+Demonstrates benchmarking in Clojure
 
 ## Usage
 
-FIXME
+`lein test`
+
+Look in the benchmarks directory for output files
 
 ## License
 
-Copyright © 2016 FIXME
+Copyright © 2016 Timothy Pratley
 
 Distributed under the Eclipse Public License either version 1.0 or (at
 your option) any later version.
