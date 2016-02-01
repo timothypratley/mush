@@ -43,3 +43,10 @@
                         :acceptable-time ~acceptable-time)]
          (add-results! ~title results#)
          (is (< (first (:mean results#)) ~acceptable-time))))))
+
+(defmacro time-msecs
+  "Returns the time in msecs taken to evaluate expr."
+  [expr]
+  `(let [start# (. System (nanoTime))]
+     ~expr
+     (/ (double (- (. System (nanoTime)) start#)) 1000000.0)))

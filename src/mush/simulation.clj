@@ -1,4 +1,5 @@
-(ns mush.core
+(ns mush.simulation
+  "Many of these functions are intentionally slow to act as examples for benchmarking and performance tuning options."
   (:require [clojure.string :as string])
   (:import (java.util Date)))
 
@@ -18,28 +19,15 @@
                 :status "In Progress"
                 :as-of (Date.)})})
 
+(defn stories-by-status [{:keys [stories]} status]
+  (filter #(= (:status %) status) stories))
+
 (def buzz-words
   ["create" "implement" "refactor" "tune" "resize" "load" "verify" "update"
    "widget" "feature" "wizard" "sorting" "search" "crud" "ui" "dashboard" "history" "configuration" "dropdown"
    "deploy" "password" "authentication" "performance" "monitoring" "stream" "social" "flat" "experience"
    "and" "or" "but" "with" "then" "that" "who" "why" "when" "because" "a"
    "firefox" "ie" "osx" "windows" "disk" "space" "crash" "freeze" "blank"])
-
-(defn fetch-history [member]
-  (Thread/sleep 10)
-  {:some "data"})
-
-(defn fetch-profile [member]
-  (Thread/sleep 11)
-  {:more "data"})
-
-(defn member-info [member]
-  (let [history (fetch-history member)
-        profile (fetch-profile member)]
-    (merge history profile)))
-
-(defn stories-by-status [{:keys [stories]} status]
-  (filter #(= (:status %) status) stories))
 
 (defn unique []
   (Integer/toString (rand-int (Math/pow 36 3)) 36))
@@ -78,11 +66,32 @@
     (reduce start-story project
             (take (- team-count doing-count) (stories-by-status project "Ready")))))
 
+(defn fetch-history [member]
+  (Thread/sleep 10)
+  {:some "data"})
+
+(defn fetch-profile [member]
+  (Thread/sleep 11)
+  {:more "data"})
+
+(defn member-info [member]
+  (let [history (fetch-history member)
+        profile (fetch-profile member)]
+    (merge history profile)))
+
+(defn member-info-better [member]
+  (let [history (future (fetch-history member))
+        profile (future (fetch-profile member))]
+    (merge @history @profile)))
+
 (defn completion-rate [project]
   (reduce (fn [acc member]
             (+ acc (:stories-per-day (member-info member) 0.5)))
           0
           (:team project)))
+
+(def completion-rate-better
+  (memoize completion-rate))
 
 (defn complete-stories [project]
   (reduce (fn complete-story [acc story]
@@ -90,6 +99,14 @@
           project
           (take (rand-int (int (* (completion-rate project) 2)))
                 (stories-by-status project "In Progress"))))
+
+(defn complete-stories-alternative [project]
+  (let [rate (completion-rate project)]
+    (reduce (fn complete-story [acc story]
+              (update-story-status acc story "Done"))
+            project
+            (take (rand-int (int (* rate 2)))
+                  (stories-by-status project "In Progress")))))
 
 (defn standup [project]
   (-> project
@@ -116,8 +133,14 @@
 (defn sim-week [project]
   (planning (nth (iterate standup project) 5)))
 
+(defn sim-week-alternative [project]
+  (with-redefs [member-info (memoize member-info)]
+    (sim-week project)))
+
 (defn sim-project [project]
   (nth (iterate sim-week project) 20))
+
+
 
 
 (defn dont-use-lists []
@@ -125,3 +148,13 @@
 
 (defn lots-of-reflection []
   )
+
+(defn remove-done-stories-with-transient [project]
+  (let [p (transient projects)]
+    (persistent!
+      (reduce (fn [acc story]
+                (assoc! acc :stories
+                          (fn [stories]
+                            (remove #(= (:id %) (:id story)) stories))))
+              p
+              (stories-by-status project "Done")))))
