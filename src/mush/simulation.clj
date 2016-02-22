@@ -1,23 +1,30 @@
 (ns mush.simulation
   "Many of these functions are intentionally slow to act as examples for benchmarking and performance tuning options."
-  (:require [clojure.string :as string])
-  (:import (java.util Date)))
+  (:require [clojure.string :as string]))
 
-(def project1
+(def project1-bad
   {:title "Build a task tracking solution"
-   :team '("timothypratley@gmail" "jeremy" "x@y")
+   :team '("Jeremy" "Justin" "Michael" "Nick" "Timothy")
    :stories '({:id "aaa"
                :title "Build a ClojureScript front end"
-               :status "Ready"
-               :as-of (Date.)}
+               :status "Ready"}
                {:id "bbb"
                 :title "Build backend services"
-                :status "Done"
-                :as-of (Date.)}
+                :status "Done"}
                {:id "ccc"
                 :title "Tune performance"
-                :status "In Progress"
-                :as-of (Date.)})})
+                :status "In Progress"})})
+
+(def project1-better
+  {:title "Build a task tracking solution"
+   :team #{"Jeremy" "Justin" "Michael" "Nick" "Timothy"}
+   :stories {"aaa" {:title "Build a ClojureScript front end"
+                    :status "Ready"}
+             "bbb" {:title "Build backend services"
+                    :status "Done"}
+             "ccc" {:title "Tune performance"
+                    :status "In Progress"}}})
+
 
 (defn stories-by-status [{:keys [stories]} status]
   (filter #(= (:status %) status) stories))
@@ -36,8 +43,7 @@
   (update project :stories conj
           {:id (unique)
            :title (string/capitalize (string/join " " (take (+ 3 (rand-int 9)) (shuffle buzz-words))))
-           :status "Ready"
-           :as-of (Date.)}))
+           :status "Ready"}))
 
 (defn remove-story [project story]
   (update project :stories
@@ -140,21 +146,16 @@
 (defn sim-project [project]
   (nth (iterate sim-week project) 20))
 
+(defn bug? [s]
+  (not (neg? (.indexOf s "bug"))))
 
+(defn bug?? [^String s]
+  (not (neg? (.indexOf s "bug"))))
 
-
-(defn dont-use-lists []
-  )
-
-(defn lots-of-reflection []
-  )
-
-(defn remove-done-stories-with-transient [project]
-  (let [p (transient projects)]
-    (persistent!
-      (reduce (fn [acc story]
-                (assoc! acc :stories
-                          (fn [stories]
-                            (remove #(= (:id %) (:id story)) stories))))
-              p
-              (stories-by-status project "Done")))))
+(defn remove-done-stories-with-transient [stories]
+  (persistent!
+    (reduce
+      (fn [acc story]
+        (dissoc! acc (:id story)))
+      (transient stories)
+      (filter #(= (:status %) "Done") stories))))

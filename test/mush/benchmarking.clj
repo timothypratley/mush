@@ -8,11 +8,18 @@
     [clj-jgit.querying :as q]
     [camel-snake-kebab.core :as kebab]))
 
+(defmacro time-msecs
+  "Returns the time in msecs taken to evaluate expr."
+  [expr]
+  `(let [start# (. System (nanoTime))]
+     ~expr
+     (/ (double (- (. System (nanoTime)) start#)) 1000000.0)))
+
 (defn format-time [t]
   (apply cr/format-value t (cr/scale-time t)))
 
-(def nsecs 1e9)
-(def msecs 1000)
+(def nsec 1e-9)
+(def msec 1e-3)
 
 (def git-commit-info
   (porc/with-repo "." (some-> (q/rev-list repo)
@@ -27,8 +34,8 @@
   (swap! benchmarks assoc-in [(:time git-commit-info) k] results))
 
 (def benchmark-filename
-  (str (string/replace (:time git-commit-info) " " "_")
-       "-" (:id git-commit-info) ".edn"))
+  (str (string/replace (:time git-commit-info "") " " "_")
+       "-" (:id git-commit-info "") ".edn"))
 
 (defn save-gathered-benchmarks [f]
   (f)
@@ -43,10 +50,3 @@
                         :acceptable-time ~acceptable-time)]
          (add-results! ~title results#)
          (is (< (first (:mean results#)) ~acceptable-time))))))
-
-(defmacro time-msecs
-  "Returns the time in msecs taken to evaluate expr."
-  [expr]
-  `(let [start# (. System (nanoTime))]
-     ~expr
-     (/ (double (- (. System (nanoTime)) start#)) 1000000.0)))

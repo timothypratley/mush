@@ -4,8 +4,10 @@
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.7.0"]]
-  :profiles
-  {:dev
-   {:dependencies [[criterium "0.4.3"]
-                   [clj-jgit "0.8.8"]
-                   [camel-snake-kebab "0.3.2"]]}})
+  :global-vars {*warn-on-reflection* true}
+  :profiles {:dev {:dependencies [[criterium "0.4.3"]
+                                  [clj-jgit "0.8.8"]
+                                  [camel-snake-kebab "0.3.2"]]}}
+  :test-selectors {:perf :perf
+                   :default (complement :perf)}
+  :jvm-opts ^:replace ["-server" "-Xms256m" "-Xmx256m" "-XX:+AggressiveOpts" "-XX:+UseCompressedOops"])
